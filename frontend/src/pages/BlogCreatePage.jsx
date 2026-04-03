@@ -1,7 +1,6 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, getStoredUser } from '../services/api.js';
-import ImageCropper from '../components/ImageCropper.jsx';
 
 export default function BlogCreatePage() {
   const { categorySlug } = useParams();
@@ -21,12 +20,10 @@ export default function BlogCreatePage() {
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     return d.toISOString().slice(0, 16);
   });
-  const [imageBlob, setImageBlob] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const onBlobReady = useCallback((blob) => setImageBlob(blob), []);
 
   // Auto-fill authorName only once.
   // Important: `getStoredUser()` returns a new object each render, so we key off `user?.email`
@@ -71,7 +68,7 @@ export default function BlogCreatePage() {
     e.preventDefault();
     setError(null);
     setMessage(null);
-    if (!imageBlob) {
+    if (!imageFile) {
       setError('Please upload a cover image.');
       return;
     }
@@ -83,7 +80,7 @@ export default function BlogCreatePage() {
       fd.append('authorName', authorName);
       fd.append('publishDate', new Date(publishDate).toISOString());
       fd.append('categorySlug', categorySlug);
-      fd.append('image', imageBlob, 'cover.jpg');
+      fd.append('image', imageFile);
 
       await api.post('/blogs', fd);
       setMessage('Submitted for review.');
@@ -109,7 +106,14 @@ export default function BlogCreatePage() {
       {message && <div className="alert alert-success">{message}</div>}
       <div className="form-panel wide">
         <form onSubmit={onSubmit}>
-          <ImageCropper onBlobReady={onBlobReady} />
+          <label htmlFor="image">Cover image</label>
+          <input
+            id="image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+            required
+          />
           <label htmlFor="title">Title</label>
           <input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={500} />
           <label htmlFor="description">Short description</label>
